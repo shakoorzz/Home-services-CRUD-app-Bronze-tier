@@ -23,6 +23,9 @@ function AdminDashboardContent() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchLeads() {
@@ -65,6 +68,32 @@ function AdminDashboardContent() {
     if (!updateError) {
       setLeads(leads.map(l => l.id === id ? { ...l, status } : l));
     }
+  };
+
+  const deleteLead = async (id: string) => {
+    setIsDeleting(true);
+    const { error: deleteError } = await supabase
+      .from('leads')
+      .delete()
+      .eq('id', id);
+
+    if (!deleteError) {
+      setLeads(leads.filter(l => l.id !== id));
+      setLeadToDelete(null);
+    } else {
+      setError(deleteError.message);
+    }
+    setIsDeleting(false);
+  };
+
+  const toggleExpand = (id: string) => {
+    const newExpanded = new Set(expandedIds);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedIds(newExpanded);
   };
 
   if (loading) return (
@@ -164,19 +193,68 @@ function AdminDashboardContent() {
 
               <div style={{ marginBottom: '2rem' }}>
                 <label>Project Details</label>
-                <p style={{ marginTop: '0.5rem', whiteSpace: 'pre-wrap', color: '#334155' }}>
-                  {lead.message}
-                </p>
+                <div style={{ marginTop: '0.5rem', position: 'relative' }}>
+                  <p style={{ 
+                    whiteSpace: 'pre-wrap', 
+                    color: '#334155',
+                    display: expandedIds.has(lead.id) ? 'block' : '-webkit-box',
+                    WebkitLineClamp: expandedIds.has(lead.id) ? 'unset' : 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                  }}>
+                    {lead.message}
+                  </p>
+                  {lead.message && lead.message.length > 100 && (
+                    <button 
+                      onClick={() => toggleExpand(lead.id)}
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 0, marginTop: '0.5rem', fontWeight: 500 }}
+                    >
+                      {expandedIds.has(lead.id) ? 'Read Less' : 'Read Full Description'}
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <a href={`mailto:${lead.email}`} className="btn btn-primary" style={{ flex: 1, minWidth: '150px' }}>
-                  📧 Reply via Email
-                </a>
-                {lead.phone && (
-                  <a href={`tel:${lead.phone}`} className="btn btn-accent" style={{ flex: 1, minWidth: '150px' }}>
-                    📞 Call Client
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                  <a href={`mailto:${lead.email}`} className="btn btn-primary" style={{ flex: 1, minWidth: '150px' }}>
+                    📧 Reply via Email
                   </a>
+                  {lead.phone && (
+                    <a href={`tel:${lead.phone}`} className="btn btn-accent" style={{ flex: 1, minWidth: '150px' }}>
+                      📞 Call Client
+                    </a>
+                  )}
+                </div>
+                
+                {leadToDelete === lead.id ? (
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: '#fee2e2', padding: '0.5rem', borderRadius: 'var(--radius)' }}>
+                    <span style={{ color: '#b91c1c', fontSize: '0.875rem', fontWeight: 500 }}>Delete this lead?</span>
+                    <button 
+                      onClick={() => setLeadToDelete(null)}
+                      className="btn"
+                      style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', background: 'transparent', color: '#64748b', border: '1px solid currentColor', cursor: 'pointer' }}
+                      disabled={isDeleting}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={() => deleteLead(lead.id)}
+                      className="btn"
+                      style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer' }}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? 'Deleting...' : 'Confirm'}
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setLeadToDelete(lead.id)}
+                    className="btn"
+                    style={{ background: 'transparent', color: '#ef4444', border: '1px solid currentColor', padding: '0.6rem 1rem', cursor: 'pointer' }}
+                  >
+                    🗑️ Delete Lead
+                  </button>
                 )}
               </div>
             </div>
