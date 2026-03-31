@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description: "Get a fast quote for your home repairs. Professional plumbing, electrical, carpentry, and more.",
 };
 
+export const runtime = 'edge';
+
+
 export default function RootLayout({
   children,
 }: Readonly<{
