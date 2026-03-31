@@ -2,15 +2,13 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-// We use the Service Role Key here to bypass any front-end RLS issues and securely insert
-// the lead data entirely on the backend. This key is never exposed to the browser.
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const supabaseServer = createClient(supabaseUrl, supabaseServiceKey)
-
 export async function submitLead(formData: FormData) {
   try {
+    // Initialize inside the function to avoid build-time crashes if env vars are missing
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const supabaseServer = createClient(supabaseUrl, supabaseServiceKey)
+
     const data = {
       full_name: formData.get('full_name') as string,
       email: formData.get('email') as string,
