@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { submitLead } from './actions';
 
 export default function LeadForm() {
   const [loading, setLoading] = useState(false);
@@ -14,20 +14,11 @@ export default function LeadForm() {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const data = {
-      full_name: formData.get('full_name') as string,
-      email: formData.get('email') as string,
-      phone: formData.get('phone') as string,
-      service_type: formData.get('service_type') as string,
-      message: formData.get('message') as string,
-    };
 
-    const { error: submitError } = await supabase
-      .from('leads')
-      .insert([data]);
+    const result = await submitLead(formData);
 
-    if (submitError) {
-      setError(submitError.message);
+    if (!result.success && result.error) {
+      setError(result.error);
       setLoading(false);
     } else {
       setSuccess(true);
